@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 type GameResultOutcome = 'win' | 'loss' | 'draw';
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -16,9 +16,28 @@ export const GameHistory: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<GameRecord[]>([]);
 
+  const stats = useMemo(() => {
+    const totalGames = history.length;
+    if (totalGames === 0) {
+      return { wins: 0, losses: 0, draws: 0, total: 0, winRate: 0, lossRate: 0, drawRate: 0 };
+    }
+    const wins = history.filter((r) => r.result === 'win').length;
+    const losses = history.filter((r) => r.result === 'loss').length;
+    const draws = history.filter((r) => r.result === 'draw').length;
+
+    return {
+      wins,
+      losses,
+      draws,
+      total: totalGames,
+      winRate: (wins / totalGames) * 100,
+      lossRate: (losses / totalGames) * 100,
+      drawRate: (draws / totalGames) * 100,
+    };
+  }, [history]);
+
   const toggleHistory = () => {
     if (!isOpen) {
-      // Refresh history from storage when opening
       try {
         const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
         setHistory(storedHistory ? JSON.parse(storedHistory) : []);
@@ -67,6 +86,27 @@ export const GameHistory: React.FC = () => {
           <div id="history-panel" className="p-4 border-t border-cyan-500/20">
             {history.length > 0 ? (
               <>
+                <div className="mb-6">
+                  <h3 className="text-base font-semibold text-slate-300 mb-3 text-center">Statistics</h3>
+                  <div className="grid grid-cols-3 gap-4 text-center bg-slate-800/50 p-4 rounded-lg">
+                    <div>
+                      <div className="text-2xl font-bold text-green-400">{stats.winRate.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-400">Win Rate</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-red-400">{stats.lossRate.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-400">Loss Rate</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-slate-400">{stats.drawRate.toFixed(1)}%</div>
+                      <div className="text-xs text-slate-400">Draw Rate</div>
+                    </div>
+                  </div>
+                   <div className="text-center mt-3 text-sm text-slate-500">
+                    Total Games: {stats.total}
+                  </div>
+                </div>
+
                 <ul className="space-y-3 max-h-60 overflow-y-auto pr-2">
                   {history.map((record) => (
                     <li key={record.id} className="flex justify-between items-center bg-slate-800/50 p-3 rounded-md animate-fade-in">
