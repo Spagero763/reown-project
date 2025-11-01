@@ -1,22 +1,26 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useReownAppkit } from '../hooks/useReownAppkit';
-import { contractService, GameEvent } from '../services/contractService';
 import { Button } from './Button';
 
+const HISTORY_KEY_PREFIX = 'tacotex_history_';
 
-const CACHE_KEY_PREFIX = 'tacotex_history_cache_';
+interface HistoryEntry {
+  id: string;
+  result: 'win' | 'loss' | 'draw';
+  timestamp: number;
+}
 
 export const GameHistory: React.FC = () => {
-  const { signer, walletAddress, isConnected } = useReownAppkit();
+  const { walletAddress, isConnected } = useReownAppkit();
   const [isOpen, setIsOpen] = useState(false);
-  const [history, setHistory] = useState<GameEvent[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     const totalGames = history.length;
     if (totalGames === 0) {
-      return { wins: 0, losses: 0, draws: 0, total: 0, winRate: 0, lossRate: 0, drawRate: 0 };
+      return { wins: 0, losses: 0, draws: 0, total: 0, winRate: 0 };
     }
     const wins = history.filter((r) => r.result === 'win').length;
     const losses = history.filter((r) => r.result === 'loss').length;
@@ -25,69 +29,55 @@ export const GameHistory: React.FC = () => {
     return {
       wins, losses, draws,
       total: totalGames,
-      winRate: (wins / totalGames) * 100,
-      lossRate: (losses / totalGames) * 100,
-      drawRate: (draws / totalGames) * 100,
+      winRate: totalGames > 0 ? (wins / totalGames) * 100 : 0,
     };
   }, [history]);
-  
-  const fetchHistory = useCallback(async (forceRefresh = false) => {
-    if (!signer || !walletAddress) return;
-    
-    const cacheKey = `${CACHE_KEY_PREFIX}${walletAddress.toLowerCase()}`;
-    
-    if (!forceRefresh) {
-        try {
-            const cachedHistory = localStorage.getItem(cacheKey);
-            if (cachedHistory) {
-                setHistory(JSON.parse(cachedHistory));
-                return;
-            }
-        } catch (e) {
-            console.error("Failed to read history from cache:", e);
-        }
-    }
 
+  const loadHistory = useCallback(() => {
+    if (!walletAddress) return;
     setIsLoading(true);
     setError(null);
     try {
-      const events = await contractService.getGameHistory(signer, walletAddress);
-      setHistory(events);
-      localStorage.setItem(cacheKey, JSON.stringify(events));
-    } catch (e: any) {
-      console.error("Failed to fetch game history:", e);
-      setError("Could not fetch on-chain history.");
+      const key = `${HISTORY_KEY_PREFIX}${walletAddress.toLowerCase()}`;
+      const storedHistory = localStorage.getItem(key);
+      setHistory(storedHistory ? JSON.parse(storedHistory) : []);
+    } catch (e) {
+      console.error("Failed to load history from localStorage:", e);
+      setError("Could not load local history.");
       setHistory([]);
     } finally {
       setIsLoading(false);
     }
-  }, [signer, walletAddress]);
+  }, [walletAddress]);
 
   const toggleHistory = () => {
     const nextIsOpen = !isOpen;
     setIsOpen(nextIsOpen);
-    if (nextIsOpen && history.length === 0) {
-      fetchHistory();
+    if (nextIsOpen) {
+      loadHistory();
     }
   };
-  
-  const clearCache = () => {
+
+  const clearHistory = () => {
     if (walletAddress) {
-        localStorage.removeItem(`${CACHE_KEY_PREFIX}${walletAddress.toLowerCase()}`);
+      try {
+        const key = `${HISTORY_KEY_PREFIX}${walletAddress.toLowerCase()}`;
+        localStorage.removeItem(key);
         setHistory([]);
-        if (isOpen) { // Refetch if the panel is open
-            fetchHistory();
-        }
+      } catch (error) {
+        console.error("Failed to clear history from localStorage:", error);
+        setError("Could not clear local history.");
+      }
     }
   };
 
   useEffect(() => {
-    // If wallet disconnects, clear the history
-    if (!isConnected) {
+    // If wallet disconnects or changes, clear the history and close panel
+    if (!isConnected || !walletAddress) {
       setHistory([]);
       setIsOpen(false);
     }
-  }, [isConnected]);
+  }, [isConnected, walletAddress]);
 
   const getResultStyles = (result: 'win' | 'loss' | 'draw') => {
     switch (result) {
@@ -106,7 +96,7 @@ export const GameHistory: React.FC = () => {
           aria-expanded={isOpen}
           aria-controls="history-panel"
         >
-          <span className="text-lg font-semibold text-white">On-Chain Game History</span>
+          <span className="text-lg font-semibold text-white">Local Game History</span>
           <svg
             className={`w-5 h-5 text-cyan-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor"
@@ -118,7 +108,7 @@ export const GameHistory: React.FC = () => {
         {isOpen && (
           <div id="history-panel" className="p-4 border-t border-cyan-500/20">
             {isLoading ? (
-                <p className="text-slate-400 text-center py-4">Loading history from blockchain...</p>
+                <p className="text-slate-400 text-center py-4">Loading history...</p>
             ) : error ? (
                 <p className="text-red-400 text-center py-4">{error}</p>
             ) : history.length > 0 ? (
@@ -127,20 +117,20 @@ export const GameHistory: React.FC = () => {
                   <h3 className="text-base font-semibold text-slate-300 mb-3 text-center">Statistics</h3>
                   <div className="grid grid-cols-3 gap-4 text-center bg-slate-800/50 p-4 rounded-lg">
                      <div>
-                      <div className="text-2xl font-bold text-green-400">{stats.winRate.toFixed(0)}%</div>
-                      <div className="text-xs text-slate-400">Win Rate</div>
+                      <div className="text-2xl font-bold text-green-400">{stats.wins}</div>
+                      <div className="text-xs text-slate-400">Wins</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-red-400">{stats.lossRate.toFixed(0)}%</div>
-                      <div className="text-xs text-slate-400">Loss Rate</div>
+                      <div className="text-2xl font-bold text-red-400">{stats.losses}</div>
+                      <div className="text-xs text-slate-400">Losses</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-slate-400">{stats.drawRate.toFixed(0)}%</div>
-                      <div className="text-xs text-slate-400">Draw Rate</div>
+                      <div className="text-2xl font-bold text-slate-400">{stats.draws}</div>
+                      <div className="text-xs text-slate-400">Draws</div>
                     </div>
                   </div>
                    <div className="text-center mt-3 text-sm text-slate-500">
-                    Total Games: {stats.total}
+                    Total Games: {stats.total} | Win Rate: {stats.winRate.toFixed(0)}%
                   </div>
                 </div>
 
@@ -150,23 +140,20 @@ export const GameHistory: React.FC = () => {
                        <span className={`px-2 py-1 text-xs font-bold uppercase rounded ${getResultStyles(record.result)}`}>
                           {record.result}
                         </span>
-                      <a href={`https://sepolia.etherscan.io/tx/${record.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 font-mono hover:text-cyan-400 transition-colors">
-                        Tx: {record.transactionHash.substring(0, 10)}...
-                      </a>
+                      <span className="text-xs text-slate-500 font-mono">
+                        {new Date(record.timestamp).toLocaleString()}
+                      </span>
                     </li>
                   ))}
                 </ul>
                 <div className="mt-4 pt-4 border-t border-cyan-500/10 flex justify-center items-center space-x-4">
-                    <Button onClick={() => fetchHistory(true)} variant="secondary" size="md" disabled={isLoading}>
-                      {isLoading ? 'Refreshing...' : 'Refresh'}
+                    <Button onClick={clearHistory} variant="secondary" size="md">
+                      Clear History
                     </Button>
-                    <button onClick={clearCache} className="text-sm text-slate-500 hover:text-red-400 transition-colors duration-200">
-                        Clear Cache
-                    </button>
                 </div>
               </>
             ) : (
-              <p className="text-slate-400 text-center py-4">No past games found on-chain for this wallet.</p>
+              <p className="text-slate-400 text-center py-4">No past games found for this wallet.</p>
             )}
           </div>
         )}
