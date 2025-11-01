@@ -1,5 +1,5 @@
 {
-  "name": "Reown AppKit DApp Showcase",
-  "description": "A simple, visually stunning decentralized application showcase built with React, demonstrating a potential integration with a digital asset 'AppKit'.",
+  "name": "TacoTex",
+  "description": "A sleek, futuristic Tic-Tac-Toe game. Sign up with your EVM wallet and challenge the unbeatable AI.",
   "requestFramePermissions": []
 }

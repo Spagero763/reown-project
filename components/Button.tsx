@@ -30,16 +30,16 @@ export const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0b0a18] transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5';
 
   const variantStyles = {
-    primary: 'bg-sky-500 hover:bg-sky-600 text-white focus:ring-sky-500',
-    secondary: 'bg-slate-700 hover:bg-slate-600 text-slate-100 focus:ring-slate-500 border border-slate-600'
+    primary: 'bg-cyan-500 hover:bg-cyan-400 text-slate-900 focus:ring-cyan-500 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40',
+    secondary: 'bg-slate-700/50 hover:bg-slate-700 text-slate-100 focus:ring-slate-500 border border-slate-600'
   };
 
   const sizeStyles = {
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-3 text-base'
+    md: 'px-5 py-2.5 text-sm tracking-wide',
+    lg: 'px-8 py-3 text-base tracking-wider'
   };
   
   const widthStyles = fullWidth ? 'w-full' : '';
