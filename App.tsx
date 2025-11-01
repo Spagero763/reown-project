@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { useReownAppkit } from './hooks/useReownAppkit';
 import { Button } from './components/Button';
 import { TicTacToe } from './components/TicTacToe';
+import { GameHistory } from './components/GameHistory';
 
 const STORAGE_KEY = 'tacotex_users';
 
@@ -56,7 +57,12 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     if (authStatus === 'authenticated') {
-      return <TicTacToe />;
+      return (
+        <div className="w-full flex flex-col items-center">
+          <TicTacToe />
+          <GameHistory />
+        </div>
+      );
     }
 
     if (authStatus === 'needsSignUp') {

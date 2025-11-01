@@ -5,6 +5,7 @@ import { Button } from './Button';
 type Player = 'X' | 'O';
 type SquareValue = Player | null;
 type Difficulty = 'easy' | 'medium' | 'hard';
+type GameResultOutcome = 'win' | 'loss' | 'draw';
 
 // --- Pure Helper Functions ---
 
@@ -21,6 +22,26 @@ const calculateWinner = (squares: SquareValue[]): { winner: Player; line: number
     }
   }
   return null;
+};
+
+// --- Game History Storage ---
+const HISTORY_STORAGE_KEY = 'tacotex_game_history';
+
+const saveGameRecord = (result: GameResultOutcome, difficulty: Difficulty) => {
+    try {
+        const history = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || '[]');
+        const newRecord = {
+            id: self.crypto.randomUUID(),
+            result,
+            difficulty,
+            timestamp: Date.now(),
+        };
+        // Add new record to the start and limit history to 20 entries
+        const updatedHistory = [newRecord, ...history].slice(0, 20);
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
+    } catch (e) {
+        console.error("Failed to save game history:", e);
+    }
 };
 
 // --- AI Logic ---
@@ -168,13 +189,18 @@ export const TicTacToe: React.FC = () => {
   
   // Game logic effect
   useEffect(() => {
+    if (!difficulty) return;
+
     const winnerInfo = calculateWinner(board);
     if (winnerInfo) {
       setGameResult({ winner: winnerInfo.winner, line: winnerInfo.line });
+      const result: GameResultOutcome = winnerInfo.winner === 'X' ? 'win' : 'loss';
+      saveGameRecord(result, difficulty);
       return;
     }
     if (board.every(square => square !== null)) {
       setGameResult({ winner: 'draw', line: null });
+      saveGameRecord('draw', difficulty);
       return;
     }
 
