@@ -7,9 +7,10 @@ interface BoardProps {
   squares: SquareValue[];
   onSquareClick: (index: number) => void;
   winningLine: number[] | null;
+  disabled?: boolean;
 }
 
-export const Board: React.FC<BoardProps> = ({ squares, onSquareClick, winningLine }) => {
+export const Board: React.FC<BoardProps> = ({ squares, onSquareClick, winningLine, disabled = false }) => {
   return (
     <div className="grid grid-cols-3 gap-3 bg-[#0b0a18] p-3 rounded-lg border-2 border-slate-700/50 shadow-lg shadow-cyan-500/10">
       {squares.map((value, index) => (
@@ -18,6 +19,7 @@ export const Board: React.FC<BoardProps> = ({ squares, onSquareClick, winningLin
           value={value} 
           onClick={() => onSquareClick(index)} 
           isWinner={winningLine?.includes(index) || false}
+          disabled={disabled || !!value}
         />
       ))}
     </div>
