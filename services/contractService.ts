@@ -2,8 +2,8 @@
 declare const ethers: any;
 
 // --- Contract Details ---
-// This is a placeholder address. You would replace this with your deployed contract address.
-const CONTRACT_ADDRESS = "0x4014A49_YOUR_DEPLOYED_CONTRACT_ADDRESS"; // IMPORTANT: Replace with your actual address
+// IMPORTANT: Replace this with the actual address of your deployed contract on the Sepolia testnet.
+const CONTRACT_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"; 
 
 const CONTRACT_ABI = [
   "event GameCreated(uint256 indexed gameId, address indexed player, uint8 difficulty)",
